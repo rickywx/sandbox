@@ -1,0 +1,166 @@
+<html>
+    <head>
+        <style>
+            .fieldLabel { 
+                display: inline-block;
+                width: 120px;
+                float: left;
+            }
+            .fieldValue { font-weight: bold; }
+            .menuButton {
+                border-radius: 6px;
+                border: thin solid black;
+                width: 96%;
+                margin-bottom: 8px;
+                height: 24px;
+                background-color: black;
+                color: white;
+                display: inline-block;
+                text-align: center;
+                vertical-align: middle;
+                font-size: 20;
+            }
+        </style>
+        <script id="labelValueTemplate" type="text/template">
+            <div>
+                <div class="fieldLabel">{{fieldLabel}}</div>
+                <div class="fieldValue">{{fieldValue}}</div>
+            </div>
+        </script>        
+        <script id="programTemplate" type="text/template">
+            <div>--Announcements--</div>
+            {{Opening Hymn<br>開会の賛美歌}}
+            {{Opening Prayer}} 
+            <div>--Ward and Stake Business--</div>
+            <br/>
+            {{Sacrament Hymn<br>聖餐の賛美歌}}
+            <div>--Administration of the Sacrament--</div>
+            <br/>
+            {{Theme}}
+            {{Speaker 1}}
+            {{Speaker 2}}
+            {{Musical Number}}
+            {{Speaker 3}}
+            {{Speaker 4}}
+            <br/>
+            {{Closing Hymn<br>閉会の賛美歌}}
+        </script>        
+    </head>
+
+    <body>
+        <a class="menuButton" href="https://goo.gl/wHqPD5">Tayori</a>
+        <div class="menuButton">Program</div>
+
+        <div id="programContentPanel"></div>
+
+        <script>
+            function unitTests(sheetFeed) {
+                document.write("<h1>Unit Tests</h1>")
+                
+                document.write("<br>ISO date only = " + new Date().toISOString().substring(0,10));
+
+                var dateList = getDateStrings(sheetFeed);
+                dateList.push(new Date().toISOString().substring(0,10));
+                dateList.sort();
+                document.write("<br> date list = " + dateList.join());
+                
+                var nextDate = findNextDate(sheetFeed);
+                document.write("<br>findNextDate = " + nextDate);
+                
+                var sampleDate = "2015-07-19";
+                var row = findRowByDate(sampleDate, sheetFeed);
+                document.write("<br>Opening Prayer for " + sampleDate + " = " + row["Opening Prayer"]);
+                
+                
+            }
+            
+            function getFieldHtml(flabel, fvalue) {
+                var labelValueTemplate = document.getElementById("labelValueTemplate");
+                var fieldHtml = labelValueTemplate.innerHTML
+                    .replace(/{{fieldLabel}}/ig, flabel.replace("\n","<br>"))
+                    .replace(/{{fieldValue}}/ig, fvalue.replace("\n","<br>"));
+                return fieldHtml;
+            }
+            
+            // function getRowByDate(sheetFeedJson) {
+            //     var colNames = [];
+            //     var rowObject = {};
+            //     var nextSunday = getNextSundayDate();
+            //     var rownum = findRowNumberByDate(nextSunday);
+            //     for(var i=0; i<sheetFeedJson.feed.entry.length; i++) {
+            //         var cell = sheetFeedJson.feed.entry[i].gs$cell;
+            //         if(cell.row==1) {
+            //             colNames.push(cell.$t);
+            //         } else if(cell.row == rownum) {
+            //             rowObject[colNames[cell.col-1]] = cell.$t;
+            //         }
+            //     }
+            //     return rowObject;
+            // }
+            
+            function getDateStrings(sheetFeed) {
+                var dates = [];
+                for(var i=0; i<sheetFeed.feed.entry.length; i++) {
+                    var cell = sheetFeed.feed.entry[i].gs$cell;
+                    if(cell.col == 1 && cell.row > 1) {
+                        dates.push(cell.$t);
+                    }  
+                }
+                return dates;
+            }
+            
+            function findNextDate(sheetFeed) {
+                var dates = getDateStrings(sheetFeed);
+                var today = (new Date()).toISOString().substring(0,10);
+                dates.push(today);
+                dates.sort();
+                for(var i=0;i<dates.length;i++) {
+                    if(dates[i] == today) {
+                        return dates[i+1];
+                    }
+                }
+                return null;
+            }
+            
+            function findRowByDate(date,sheetFeedJson) {
+                var rowObject = {};
+                var colNames = [];
+                var rowNum = -1;
+                for(var i=0; i<sheetFeedJson.feed.entry.length; i++) {
+                    var cell = sheetFeedJson.feed.entry[i].gs$cell;
+                    //var isoDateStr = date.toISOString().substring(0,10);
+                    if(cell.row==1) {
+                        colNames.push(cell.$t);
+                    }
+                    if(cell.$t == date) {
+                        rowNum = cell.row;
+                    }
+                    if(cell.row == rowNum) {
+                        rowObject[colNames[cell.col-1]] = cell.$t;
+                    }
+                }
+                return rowObject;
+            }
+            
+            function sheetLoaded(sheetFeed) {
+                
+                var nextDateInSheet = findNextDate(sheetFeed);
+                var row = findRowByDate(nextDateInSheet,sheetFeed);
+                var programContentHtml = "";
+                var programTemplate = document.getElementById("programTemplate");
+                programTemplate.innerHTML = programTemplate.innerHTML.replace(/<br>/ig,"\n");
+                for(var col in row) {
+                    var fieldHtml = getFieldHtml(col, row[col]);
+                    programTemplate.innerHTML = programTemplate.innerHTML
+                        .replace('{{' + col + '}}', fieldHtml);
+                }
+                //remove any template variables that did not get replaced (they were blank)
+                programTemplate.innerHTML = programTemplate.innerHTML.replace(/{{.*}}/ig, "");
+                var programContentPanel = document.getElementById("programContentPanel");
+                programContentPanel.innerHTML = programTemplate.innerHTML;
+            } 
+        </script>
+        <script src="https://spreadsheets.google.com/feeds/cells/16OFyIhA6bQjl2ru0si053noyLWjxzo9xdYuWRg31jWo/or9i3cs/public/values?alt=json-in-script&callback=sheetLoaded"></script>
+        <script src="https://spreadsheets.google.com/feeds/cells/16OFyIhA6bQjl2ru0si053noyLWjxzo9xdYuWRg31jWo/otrbbl/public/values?alt=json-in-script&callback=sheetLoaded"></script>
+    </body>
+</html>
