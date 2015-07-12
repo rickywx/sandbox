@@ -1,9 +1,208 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <style>
+            .fieldLabel { 
+                display: inline-block;
+                width: 110px;
+                float: left;
+                font-size: 90%;
+            }
+            .fieldValue { 
+                font-size: 90%;
+                font-weight: bold;
+            }
+            .menuButton {
+                border-radius: 8px;
+                border: thin solid black;
+                width: 96%;
+                height: 24px;
+                background-color: black;
+                color: white;
+                display: inline-block;
+                text-align: center;
+                vertical-align: middle;
+                font-size: 20;
+                margin-bottom: 4px;
+            }
+            .divider { padding-left: 24px; }
+            .messageValue {
+                margin-left: 4px;
+                margin-bottom: 4px;
+            }
+            #programContentPanel { margin-bottom: 4px; }
+        </style>
+        <script id="labelValueTemplate" type="text/template">
+            <div>
+                <div class="{{fieldLabelClass}}">{{fieldLabel}}</div>
+                <div class="{{fieldValueClass}}">{{fieldValue}}</div>
+            </div>
+        </script>        
+        <script id="programTemplate" type="text/template">
+            <div class="menuButton">{{Date}}&nbsp;&nbsp;Program</div>
+            <div class="divider">--Announcements--</div>
+            {{Opening Hymn<br>開会の賛美歌}}
+            {{Opening Prayer}} 
+            <div class="divider">--Ward and Stake Business--</div>
+            <br/>
+            {{Sacrament Hymn<br>聖餐の賛美歌}}
+            <div class="divider">--Administration of the Sacrament--</div>
+            <br/>
+            {{Theme}}
+            {{Speaker 1}}
+            {{Speaker 2}}
+            {{Musical Number}}
+            {{Speaker 3}}
+            {{Speaker 4}}
+            <br/>
+            {{Closing Hymn<br>閉会の賛美歌}}
+            {{Closing Prayer}}
+        </script>
+        <script id="messageTemplate" type="text/template">
+            <div class="menuButton">{{messageLabel}}</div>
+        </script>
     </head>
+
     <body>
-        <a href="bomintro.html">Book of Mormon Introduction</a>
-        <br><a href="daiichi.html">第一便り</a>
+        <div id="programPanel"></div>
+        <div class="menuButton">Announcements</div>
+        <div id="announcementsPanel"></div>
+        <div id="messagePanel"></div>
+        <a class="menuButton" href="https://goo.gl/wHqPD5">Tayori</a>
+        
+        <script>
+            const DATE_COL = "Date";
+            
+            function getFieldHtml(flabel, fvalue, flabelClass, fvalueClass) {
+                var fieldLabelClass = flabelClass ? flabelClass : 'fieldLabel';
+                var fieldValueClass = fvalueClass ? fvalueClass : 'fieldValue';
+                var labelValueTemplate = document.getElementById("labelValueTemplate");
+                var fieldHtml = labelValueTemplate.innerHTML
+                    .replace(/{{fieldLabel}}/ig, flabel.replace("\n","<br>"))
+                    .replace(/{{fieldValue}}/ig, fvalue.replace("\n","<br>"))
+                    .replace(/{{fieldLabelClass}}/ig, fieldLabelClass)
+                    .replace(/{{fieldValueClass}}/ig, fieldValueClass);
+                return fieldHtml;
+            }
+            
+            function getDateStrings(sheetFeed) {
+                var dates = [];
+                for(var i=0; i<sheetFeed.feed.entry.length; i++) {
+                    var cell = sheetFeed.feed.entry[i].gs$cell;
+                    if(cell.col == 1 && cell.row > 1) {
+                        dates.push(cell.$t);
+                    }  
+                }
+                return dates;
+            }
+            
+            function findNextDate(sheetFeed) {
+                var dates = getDateStrings(sheetFeed);
+                var today = (new Date()).toISOString().substring(0,10);
+                dates.push(today);
+                dates.sort();
+                for(var i=0;i<dates.length;i++) {
+                    if(dates[i] == today) {
+                        return dates[i+1];
+                    }
+                }
+                return null;
+            }
+            
+            //assumes date column is labelled DATE_COL
+            function findRowsByDate(date,sheetFeed) {
+                var rowObject = {};
+                var rowObjects = [];
+                var colNames = [];
+                var rowNum = -1;
+                for(var i=0; i<sheetFeed.feed.entry.length; i++) {
+                    var cell = sheetFeed.feed.entry[i].gs$cell;
+                    if(cell.row==1) {
+                        colNames.push(cell.$t);
+                    } else if(colNames[cell.col-1] == DATE_COL && cell.$t == date) {
+                        rowObjects.push({});
+                        rowNum = cell.row;
+                    }
+                    if(cell.row == rowNum) {
+                        var obj = rowObjects[rowObjects.length-1];
+                        obj[colNames[cell.col-1]] = cell.$t;
+                    }
+                }
+                return rowObjects;
+            }
+            
+            function announcementSheetLoaded(sheetFeed) {
+                var nextDateInSheet = findNextDate(sheetFeed);
+                var rows = findRowsByDate(nextDateInSheet,sheetFeed);
+                var announcementsPanel = document.getElementById('announcementsPanel');
+                for(var row in rows) {
+                    announcementsPanel.innerHTML += rows[row].Announcement + "<br>";
+               }
+                
+            }
+            
+            function messageSheetLoaded(sheetFeed) {
+                var nextDateInSheet = findNextDate(sheetFeed);
+                var rowData = findRowsByDate(nextDateInSheet,sheetFeed)[0];
+                var msgPanel = document.getElementById("messagePanel");
+                var msgHtmls = "";
+                for(var col in rowData) {
+                    if(col != DATE_COL) {
+                        var msgValue = rowData[col].replace(/\n/ig,"<br>");
+                        msgHtmls += getFieldHtml(col,msgValue,"menuButton","messageValue");
+                    }
+                }
+                msgPanel.innerHTML = msgHtmls;
+            }
+            
+            function programSheetLoaded(sheetFeed) {
+                var nextDateInSheet = findNextDate(sheetFeed);
+                var rowData = findRowsByDate(nextDateInSheet,sheetFeed)[0];
+                var programContentHtml = "";
+                var programTemplate = document.getElementById("programTemplate");
+                programTemplate.innerHTML = programTemplate.innerHTML.replace(/<br>/ig,"\n");
+                for(var col in rowData) {
+                    //replace fieldlabel and fieldvalue except for the 'Date' col
+                    var fieldHtml = col == DATE_COL ? rowData[col] : getFieldHtml(col, rowData[col]);
+                    programTemplate.innerHTML = programTemplate.innerHTML
+                        .replace('{{' + col + '}}', fieldHtml);
+                }
+                //remove any template variables that did not get replaced (they were blank)
+                programTemplate.innerHTML = programTemplate.innerHTML.replace(/{{.*}}/ig, "");
+                var programContentPanel = document.getElementById("programPanel");
+                programContentPanel.innerHTML = programTemplate.innerHTML;
+            } 
+            
+            function unitTests(sheetFeed) {
+                document.write("<h1>Unit Tests</h1>")
+                
+                document.write("<br>ISO date only = " + new Date().toISOString().substring(0,10));
+
+                var dateList = getDateStrings(sheetFeed);
+                dateList.push(new Date().toISOString().substring(0,10));
+                dateList.sort();
+                document.write("<br> date list = " + dateList.join());
+                
+                var nextDate = findNextDate(sheetFeed);
+                document.write("<br>findNextDate = " + nextDate);
+                
+                var sampleDate = "2015-07-19";
+                var rows = findRowsByDate(sampleDate, sheetFeed);
+                document.write("<br>Opening Prayer for " + sampleDate + " = " + rows["Opening Prayer"]);
+                
+                rows = findRowsByDate(nextDate, sheetFeed);
+                document.write("<br>rowCount = " + rows.length + "<br>");
+                for(var row in rows) {
+                    for(var col in rows[row]) {
+                        document.write(col + "=" + rows[row][col]);
+                    }
+                    document.write("<br>")
+                }
+            }
+        </script>
+        <script src="https://spreadsheets.google.com/feeds/cells/16OFyIhA6bQjl2ru0si053noyLWjxzo9xdYuWRg31jWo/or9i3cs/public/values?alt=json-in-script&callback=programSheetLoaded"></script>
+        <script src="https://spreadsheets.google.com/feeds/cells/16OFyIhA6bQjl2ru0si053noyLWjxzo9xdYuWRg31jWo/otrbbl/public/values?alt=json-in-script&callback=programSheetLoaded"></script>
+        <script src="https://spreadsheets.google.com/feeds/cells/16OFyIhA6bQjl2ru0si053noyLWjxzo9xdYuWRg31jWo/osyrc1u/public/values?alt=json-in-script&callback=messageSheetLoaded"></script>
+        <script src="https://spreadsheets.google.com/feeds/cells/16OFyIhA6bQjl2ru0si053noyLWjxzo9xdYuWRg31jWo/ovevdk8/public/values?alt=json-in-script&callback=announcementSheetLoaded"></script>
     </body>
 </html>
