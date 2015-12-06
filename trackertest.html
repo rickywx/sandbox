@@ -1,0 +1,30 @@
+<html>
+    <head>
+        <script type="text/javascript">
+            function add10AndSave() {
+                localStorage.throwCount = Number(localStorage.throwCount) + 10;
+                var numberInput = document.getElementById("numberInput");
+                numberInput.value = localStorage.throwCount;
+            }
+            function subtract10AndSave() {
+                localStorage.throwCount = Number(localStorage.throwCount) - 10;
+                var numberInput = document.getElementById("numberInput");
+                numberInput.value = localStorage.throwCount;
+            }
+            function load() {
+                var numberInput = document.getElementById("numberInput");
+                numberInput.value = localStorage.throwCount;
+            }
+            function save() {
+                var numberInput = document.getElementById("numberInput");
+                localStorage.throwCount = numberInput.value;
+            }
+        </script>
+    </head>
+    <body onload="load()">
+        <h1>Tracker</h1>
+        <input type="button" value="-10"  onclick="subtract10AndSave()" />
+        <input type="number" id="numberInput" style="width:5em" onchange="save()"/>    
+        <input type="button" value="+10" onclick="add10AndSave()" />
+    </body>
+</html>
