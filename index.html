@@ -1,5 +1,24 @@
 <html>
   <head>
+    <style type="text/css">
+      input {
+        font-size:3em;
+        text-align:center;
+        -webkit-appearance: button;
+      }
+      input[type=button] {
+        border-radius:16px;
+        background:-webkit-gradient(linear, 0 0, 0 100%, color-stop(0.05, #2dabf9), to(#0688fa));
+        background:-webkit-linear-gradient(#2dabf9 5%, #0688fa 100%);
+        background:-moz-linear-gradient(#2dabf9 5%, #0688fa 100%);
+        background:-o-linear-gradient(#2dabf9 5%, #0688fa 100%);
+        background:linear-gradient(#2dabf9 5%, #0688fa 100%);
+      }
+      h1 {
+        width:100%;
+        text-align:center;
+      }
+    </style>
     <script type="text/javascript">
       function changenumber() {
         localStorage.counternumber=document.getElementById("numberinput").value;
@@ -7,16 +26,22 @@
       function loadnumber() {
         document.getElementById("numberinput").value=localStorage.counternumber;
       }
+      function increase(increment){
+       document.getElementById("numberinput").value=Number(document.getElementById("numberinput").value)+increment;
+        
+      }
     </script>
     
   </head>
 <body onload="loadnumber()">
   
   <h1>counter</h1>
-  <input type="number" min="0" onchange="changenumber()" id="numberinput"> 
-  
+  <input type="button" value="-1" onclick="increase(-1)">
+  <input type="number" min="0" style="width:3em;" onchange="changenumber()" id="numberinput"> 
   </input>
-
+  <input type="button" value="+1" onclick="increase(1)">
+ <input type="button" value="+10" onclick="increase(10)">
+ </input>
 </body>
 
 
