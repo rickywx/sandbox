@@ -2,11 +2,16 @@
   <head>
     <style type="text/css">
       input {
-        font-size:3em;
+        font-size:5em;
         text-align:center;
         -webkit-appearance: button;
       }
+      input[type=text] { 
+        width: 100%; 
+        padding: 4px;
+      }
       input[type=button] {
+        width:48%;
         border-radius:16px;
         background:-webkit-gradient(linear, 0 0, 0 100%, color-stop(0.05, #2dabf9), to(#0688fa));
         background:-webkit-linear-gradient(#2dabf9 5%, #0688fa 100%);
@@ -36,12 +41,11 @@
 <body onload="loadnumber()">
   
   <h1>counter</h1>
-  <input type="button" value="-1" onclick="increase(-1)">
-  <input type="number" min="0" style="width:3em;" onchange="changenumber()" id="numberinput"> 
-  </input>
-  <input type="button" value="+1" onclick="increase(1)">
- <input type="button" value="+10" onclick="increase(10)">
- </input>
+  <input type="button" value="-1" onclick="increase(-1)" />
+  <input type="button" value="+1" onclick="increase(1)" />
+  <input type="number" min="0" onchange="changenumber()" id="numberinput" /> 
+  <input type="button" value="-10" onclick="increase(-10)" />
+  <input type="button" value="+10" onclick="increase(10)" />
 </body>
 
 
